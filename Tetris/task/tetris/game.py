@@ -1,9 +1,6 @@
 # Write your code here
 import numpy as np
 
-ar = [['-'] * 4] * 4
-grid = np.array(ar)
-
 
 class Figure:
     '''
@@ -101,7 +98,8 @@ class Figure:
             self.grid_fourth = self.grid_T.copy()
             self.grid_fourth[0:3, 1] = 0
             self.grid_fourth[1, 2] = 0
-            self.moves = [self.grid_first,self.grid_second, self.grid_third, self.grid_fourth, self.grid_first]
+            self.moves = [self.grid_first, self.grid_second, self.grid_third, self.grid_fourth, self.grid_first]
+
     def show(self):
         for j in self.grid:
             print(' '.join(map(str, j)))
@@ -110,8 +108,6 @@ class Figure:
             for j in i:
                 print(' '.join(map(str, j)))
             print()
-
-
 
 
 i_fig = Figure('I')
