@@ -51,6 +51,7 @@ class Model:
                     i[j] += 1
         Model.move_down(self)
         print(self.positions[0])
+        Model.print_out(self)
 
     def move_left(self):
         for i in self.positions:
@@ -61,6 +62,7 @@ class Model:
                     i[j] -= 1
         print(self.positions[0])
         Model.move_down(self)
+        Model.print_out(self)
 
     def rotate(self):
         if self.current_positions < 3:
@@ -68,6 +70,7 @@ class Model:
         else:
             self.current_positions = 0
         Model.move_down(self)
+        Model.print_out(self)
 
     def print_out(self):
         for i in self.saved_positions[self.current_positions]:
@@ -75,11 +78,28 @@ class Model:
             print(' '.join(map(str, i)))
 
 
+type_of_model = input().split()
+dimensions = input().split()
+print(type_of_model)
+print(dimensions)
+obj_model = Model(type_model=type_of_model[1])
+obj_model.MODEL_SHAPE_SIZE_X = dimensions[1]
+obj_model.MODEL_SHAPE_SIZE_Y = dimensions[2]
+
+while True:
+    cmd = input()
+    if cmd == 'quit':
+        break
+    elif cmd == 'rotate':
+        obj_model.rotate()
+    elif cmd == 'left':
+        obj_model.move_left()
+    elif cmd == 'right':
+        obj_model.move_right()
 
 
 
-
-a = Model('T')
+'''a = Model('T')
 a.move_left()
 a.move_left()
 a.move_left()
@@ -92,6 +112,6 @@ a.rotate()
 a.rotate()
 a.rotate()
 a.draw()
-a.print_out()
+a.print_out()'''
 
 
