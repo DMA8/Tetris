@@ -1,12 +1,13 @@
 # Write your code here
 import numpy as np
-
+SIZE1 = 4
+SIZE2 = 4
 
 class Figure:
     '''
     This class represents figures for Tetris game
     '''
-    ar = [['-'] * 4] * 4
+    ar = [['-'] * SIZE1] * SIZE2
     grid = np.array(ar)
 
     def __init__(self, figure, grid=grid.copy()):
