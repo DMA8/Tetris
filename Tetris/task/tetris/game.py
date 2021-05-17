@@ -169,47 +169,66 @@ class Model:
             self.model = self.field.copy()
 
     def draw(self):
+        if '0' in self.saved_positions[self.current_positions][-1]:
+            return
         for model_position in range(len(self.positions)):
             for coordinate in self.positions[model_position]:
                 row_coordinate = coordinate // self.MODEL_SHAPE_SIZE_X
                 column_coordinate = coordinate % self.MODEL_SHAPE_SIZE_X
-                self.model[row_coordinate][column_coordinate] = 0
+                if row_coordinate < self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
+                    self.model[row_coordinate][column_coordinate] = 0
+                else:
+                    if row_coordinate >= self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
+                        self.model[self.MODEL_SHAPE_SIZE_Y - 1][self.MODEL_SHAPE_SIZE_X - 1] = 0
+                    elif row_coordinate >= self.MODEL_SHAPE_SIZE_Y:
+                        self.model[self.MODEL_SHAPE_SIZE_Y - 1][column_coordinate] = 0
+                    elif column_coordinate >= self.MODEL_SHAPE_SIZE_X:
+                        self.model[row_coordinate][self.MODEL_SHAPE_SIZE_X - 1] = 0
+
+
+
             self.saved_positions[model_position] = self.model
             self.model = self.field.copy()
         #    self.current_positions = self.saved_positions[0]
 
     def move_down(self):
-        for i in self.positions:
-            i += 10
-        Model.draw(self)
+        if '0' not in self.saved_positions[self.current_positions][-1]:
+            for i in self.positions:
+                i += 10
+            Model.draw(self)
         Model.print_out(self)
 
     def move_right(self):
-        for i in self.positions:
-            for j in range(len(i)):
-                if i[j] % 10 == 9:
-                    i[j] -= 9
-                else:
-                    i[j] += 1
+        if '0' not in self.saved_positions[self.current_positions][:, -1]:
+            for i in self.positions:
+                for j in range(len(i)):
+                    if i[j] % 10 == 9:
+                        i[j] -= 9
+                    else:
+                        i[j] += 1
         Model.move_down(self)
       #  print(self.positions[0])
 
     def move_left(self):
-        for i in self.positions:
-            for j in range(len(i)):
-                if i[j] % 10 == 0:
-                    i[j] += 9
-                else:
-                    i[j] -= 1
-       # print(self.positions[0])
+        if '0' not in self.saved_positions[self.current_positions][:, 0]:
+            for i in self.positions:
+                for j in range(len(i)):
+                    if i[j] % 10 == 0:
+                        i[j] += 9
+                    else:
+                        i[j] -= 1
+           # print(self.positions[0])
         Model.move_down(self)
 
     def rotate(self):
-        if self.current_positions < 3:
-            self.current_positions += 1
+        if '0' not in self.saved_positions[self.current_positions][:, -1]:
+            if self.current_positions < 3:
+                self.current_positions += 1
+            else:
+                self.current_positions = 0
+            Model.move_down(self)
         else:
-            self.current_positions = 0
-        Model.move_down(self)
+            Model.print_out(self)
 
     def print_out(self):
         for i in self.saved_positions[self.current_positions]:
@@ -217,18 +236,14 @@ class Model:
             print(' '.join(map(str, i)))
        # print()
 
-'''a = Model(type_model='I')
-a.move_down()
-a.move_right()
-a.rotate()'''
+
 
 
 type_of_model = input().split()
 dimensions = input().split()
 
 obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]), MODEL_SHAPE_SIZE_Y=int(dimensions[1]))
-'''obj_model.MODEL_SHAPE_SIZE_X = dimensions[0]
-obj_model.MODEL_SHAPE_SIZE_Y = dimensions[1]'''
+
 print()
 for i in obj_model.model:
     print(' '.join(map(str, i)))
