@@ -2,7 +2,8 @@ import numpy as np
 
 
 class Model:
-
+    # координаты всех моделей
+    storage_freezed = set()
     all_models = {
         'O': [[4, 14, 15, 5], [4, 14, 15, 5], [4, 14, 15, 5], [4, 14, 15, 5]],
         'I': [[4, 14, 24, 34], [3, 4, 5, 6], [4, 14, 24, 34], [3, 4, 5, 6]],
@@ -13,15 +14,21 @@ class Model:
         'T': [[4, 14, 24, 15], [4, 13, 14, 15], [5, 15, 25, 14], [4, 5, 6, 15]]
     }
 
-    def __init__(self, type_model='O',MODEL_SHAPE_SIZE_X=10, MODEL_SHAPE_SIZE_Y=20 ):
-        self.MODEL_SHAPE_SIZE_X = MODEL_SHAPE_SIZE_X
-        self.MODEL_SHAPE_SIZE_Y = MODEL_SHAPE_SIZE_Y
-        self.field = np.array([['-'] * self.MODEL_SHAPE_SIZE_X] * self.MODEL_SHAPE_SIZE_Y)
-        self.model = self.field.copy()
-
+    def __init__(self, type_model='O',MODEL_SHAPE_SIZE_X=10, MODEL_SHAPE_SIZE_Y=20, field=None ):
+        self.MODEL_SHAPE_SIZE_X = MODEL_SHAPE_SIZE_X # ширина поля игрового
+        self.MODEL_SHAPE_SIZE_Y = MODEL_SHAPE_SIZE_Y # высота поля игрового
+        if field is None:
+            self.field = np.array([['-'] * self.MODEL_SHAPE_SIZE_X] * self.MODEL_SHAPE_SIZE_Y)
+            self.model = self.field.copy()
+        else:
+            self.field = field.copy()
+            self.model = field.copy()
+        self.stucked = False
         self.positions = np.array(Model.all_models[type_model].copy())
         self.saved_positions = [[], [], [], []]
+        self.last_model = []  # grid with model on it in final position
         self.current_positions = 0
+
         for model_position in range(len(self.positions)):
             for coordinate in self.positions[model_position]:
                 row_coordinate = coordinate // self.MODEL_SHAPE_SIZE_X
@@ -31,15 +38,17 @@ class Model:
             self.model = self.field.copy()
 
     def draw(self):
-        if '0' in self.saved_positions[self.current_positions][-1]:
-            return
+        # переводим из однозначной координаты в двузначную координату
         for model_position in range(len(self.positions)):
             for coordinate in self.positions[model_position]:
                 row_coordinate = coordinate // self.MODEL_SHAPE_SIZE_X
                 column_coordinate = coordinate % self.MODEL_SHAPE_SIZE_X
+
+                # если не выходим за границы
                 if row_coordinate < self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
                     self.model[row_coordinate][column_coordinate] = 0
-                else:
+                else:   # если выходим за границы
+                    self.last_model = self.saved_positions[self.current_positions]
                     if row_coordinate >= self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
                         self.model[self.MODEL_SHAPE_SIZE_Y - 1][self.MODEL_SHAPE_SIZE_X - 1] = 0
                     elif row_coordinate >= self.MODEL_SHAPE_SIZE_Y:
@@ -47,81 +56,130 @@ class Model:
                     elif column_coordinate >= self.MODEL_SHAPE_SIZE_X:
                         self.model[row_coordinate][self.MODEL_SHAPE_SIZE_X - 1] = 0
 
-
-
             self.saved_positions[model_position] = self.model
             self.model = self.field.copy()
-        #    self.current_positions = self.saved_positions[0]
+            #print(self.positions[self.current_positions])
+
+    def freeze_model(self):
+        if np.any((self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (self.MODEL_SHAPE_SIZE_Y - 1) - 1): #если модель коснулась последней строки
+            self.last_model = self.saved_positions[self.current_positions]
+            print('model freezed')
+            np.append(Model.storage_freezed, self.positions[self.current_positions])
+            for i in self.positions[self.current_positions]:
+                #if i not in Model.storage_freezed:
+                Model.storage_freezed.add(i)
+            print(Model.storage_freezed)
+            self.stucked = True
+            return
+        return False
 
     def move_down(self):
-        if '0' not in self.saved_positions[self.current_positions][-1]:
+        if not self.bottom_reached() and not check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() + 10): # AND
             for i in self.positions:
                 i += 10
-            Model.draw(self)
-        Model.print_out(self)
+            self.draw()
+            #self.check_obstackles()
+        else:
+            self.freeze_model()
+            self.stucked = True
+        self.print_out()
 
     def move_right(self):
-        if '0' not in self.saved_positions[self.current_positions][:, -1]:
+        if not self.right_boundaries_reached():
             for i in self.positions:
                 for j in range(len(i)):
                     if i[j] % 10 == 9:
                         i[j] -= 9
                     else:
                         i[j] += 1
-        Model.move_down(self)
-      #  print(self.positions[0])
+        self.move_down()
+
+
 
     def move_left(self):
-        if '0' not in self.saved_positions[self.current_positions][:, 0]:
+        if not self.left_boundaries_reached():
             for i in self.positions:
                 for j in range(len(i)):
                     if i[j] % 10 == 0:
                         i[j] += 9
                     else:
                         i[j] -= 1
-           # print(self.positions[0])
-        Model.move_down(self)
+        self.move_down()
+
+    def check_gameover(self):
+        pass
 
     def rotate(self):
-        if '0' not in self.saved_positions[self.current_positions][-1, :]:
-            print('here')
+        if not self.bottom_reached():
             if self.current_positions < 3:
                 self.current_positions += 1
             else:
                 self.current_positions = 0
-            Model.move_down(self)
+            self.move_down()
         else:
-            Model.print_out(self)
+            self.print_out()
 
     def print_out(self):
         for i in self.saved_positions[self.current_positions]:
-          #  for j in i:
             print(' '.join(map(str, i)))
-       # print()
+
+    def bottom_reached(self):
+        if np.any((self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (self.MODEL_SHAPE_SIZE_Y - 1) - 1):
+            print('bottom is reached!')
+            return True
+        return False
+
+    def left_boundaries_reached(self):
+        if np.any(((self.positions[self.current_positions])) % 10 == 0) or check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() - 1):
+            print('left boundary is reached!')
+            return True
+        return False
+
+    def right_boundaries_reached(self):
+        if np.any(((self.positions[self.current_positions])) % 10 == 9)or check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() + 1):
+            print('right boundary is reached!')
+            return True
+        return False
 
 
 
+def check_obst(obst, to_check):
+    for i in obst:
+        for j in to_check:
+            if np.any(i == j):
+                return True
+    return False
 
-type_of_model = input().split()
-dimensions = input().split()
+
+type_of_model = input('Choose the model    ').split()
+dimensions = input('Choose the size of playground    ').split()
 
 obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]), MODEL_SHAPE_SIZE_Y=int(dimensions[1]))
 
+field = []
 print()
 for i in obj_model.model:
     print(' '.join(map(str, i)))
 print()
 obj_model.print_out()
 while True:
-    cmd = input()
-    print()
-    if cmd == 'exit':
-        break
-    elif cmd == 'rotate':
-        obj_model.rotate()
-    elif cmd == 'left':
-        obj_model.move_left()
-    elif cmd == 'right':
-        obj_model.move_right()
-    elif cmd == 'down':
-        obj_model.move_down()
+    obj_model.freeze_model()
+    if obj_model.stucked:
+        type_of_model = input('Choose the model    ').split()
+        print(obj_model.last_model)
+        obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]),
+                          MODEL_SHAPE_SIZE_Y=int(dimensions[1]), field=obj_model.last_model)
+        obj_model.print_out()
+    else:
+            cmd = input('what to do?  left? right? rotate? down?   ')
+            print()
+            if cmd == 'exit':
+                break
+            elif cmd == 'rotate':
+                obj_model.rotate()
+            elif cmd == 'left':
+                obj_model.move_left()
+            elif cmd == 'right':
+                obj_model.move_right()
+            elif cmd == 'down':
+                obj_model.move_down()
