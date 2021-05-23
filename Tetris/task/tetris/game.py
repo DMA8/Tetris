@@ -236,6 +236,7 @@ while not obj_model.check_gameover():
         obj_model.check_complited_lines()
         for i in obj_model.last_model:
             print(' '.join(map(str, i)))
+        print()
     elif cmd == 'piece':
 
     #obj_model.check_complited_lines()
