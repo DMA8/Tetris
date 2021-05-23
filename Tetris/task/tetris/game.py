@@ -14,9 +14,10 @@ class Model:
         'T': [[4, 14, 24, 15], [4, 13, 14, 15], [5, 15, 25, 14], [4, 5, 6, 15]]
     }
 
-    def __init__(self, type_model='O',MODEL_SHAPE_SIZE_X=10, MODEL_SHAPE_SIZE_Y=20, field=None ):
-        self.MODEL_SHAPE_SIZE_X = MODEL_SHAPE_SIZE_X # ширина поля игрового
-        self.MODEL_SHAPE_SIZE_Y = MODEL_SHAPE_SIZE_Y # высота поля игрового
+    def __init__(self, type_model='O', MODEL_SHAPE_SIZE_X=10, MODEL_SHAPE_SIZE_Y=20, field=None):
+        self.MODEL_SHAPE_SIZE_X = MODEL_SHAPE_SIZE_X  # ширина поля игрового
+        self.MODEL_SHAPE_SIZE_Y = MODEL_SHAPE_SIZE_Y  # высота поля игрового
+        print('field is ',field)
         if field is None:
             self.field = np.array([['-'] * self.MODEL_SHAPE_SIZE_X] * self.MODEL_SHAPE_SIZE_Y)
             self.model = self.field.copy()
@@ -33,7 +34,12 @@ class Model:
             for coordinate in self.positions[model_position]:
                 row_coordinate = coordinate // self.MODEL_SHAPE_SIZE_X
                 column_coordinate = coordinate % self.MODEL_SHAPE_SIZE_X
-                self.model[row_coordinate][column_coordinate] = 0
+                #print('row_coordinate is ', row_coordinate, 'column_coordinate is ', column_coordinate)
+                #print(self.model)
+                if self.model[row_coordinate][column_coordinate] != 0:
+                    self.model[row_coordinate][column_coordinate] = 0
+                else:
+                    self.check_gameover()
             self.saved_positions[model_position] = self.model
             self.model = self.field.copy()
 
@@ -46,8 +52,11 @@ class Model:
 
                 # если не выходим за границы
                 if row_coordinate < self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
-                    self.model[row_coordinate][column_coordinate] = 0
-                else:   # если выходим за границы
+                    if self.model[row_coordinate][column_coordinate] != 0:
+                        #print('row_coordinate is ', row_coordinate, 'column_coordinate is ', column_coordinate)
+                        self.model[row_coordinate][column_coordinate] = 0
+                        self.last_model = self.saved_positions[self.current_positions].copy()
+                else:  # если выходим за границы
                     self.last_model = self.saved_positions[self.current_positions]
                     if row_coordinate >= self.MODEL_SHAPE_SIZE_Y and column_coordinate < self.MODEL_SHAPE_SIZE_X:
                         self.model[self.MODEL_SHAPE_SIZE_Y - 1][self.MODEL_SHAPE_SIZE_X - 1] = 0
@@ -55,18 +64,16 @@ class Model:
                         self.model[self.MODEL_SHAPE_SIZE_Y - 1][column_coordinate] = 0
                     elif column_coordinate >= self.MODEL_SHAPE_SIZE_X:
                         self.model[row_coordinate][self.MODEL_SHAPE_SIZE_X - 1] = 0
-
             self.saved_positions[model_position] = self.model
             self.model = self.field.copy()
-            #print(self.positions[self.current_positions])
 
     def freeze_model(self):
-        if np.any((self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (self.MODEL_SHAPE_SIZE_Y - 1) - 1): #если модель коснулась последней строки
+        if np.any((self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (
+                self.MODEL_SHAPE_SIZE_Y - 1) - 1):  # если модель коснулась последней строки
             self.last_model = self.saved_positions[self.current_positions]
             print('model freezed')
             np.append(Model.storage_freezed, self.positions[self.current_positions])
             for i in self.positions[self.current_positions]:
-                #if i not in Model.storage_freezed:
                 Model.storage_freezed.add(i)
             print(Model.storage_freezed)
             self.stucked = True
@@ -74,14 +81,19 @@ class Model:
         return False
 
     def move_down(self):
-        if not self.bottom_reached() and not check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() + 10): # AND
+        if not self.bottom_reached() and not check_obst(Model.storage_freezed,
+                                                        self.positions[self.current_positions].copy() + 10):  # AND
             for i in self.positions:
                 i += 10
             self.draw()
-            #self.check_obstackles()
         else:
             self.freeze_model()
             self.stucked = True
+            for i in self.positions[self.current_positions]:
+                Model.storage_freezed.add(i)
+
+        print(self.positions[self.current_positions])
+        print(Model.storage_freezed)
         self.print_out()
 
     def move_right(self):
@@ -94,8 +106,6 @@ class Model:
                         i[j] += 1
         self.move_down()
 
-
-
     def move_left(self):
         if not self.left_boundaries_reached():
             for i in self.positions:
@@ -105,9 +115,6 @@ class Model:
                     else:
                         i[j] -= 1
         self.move_down()
-
-    def check_gameover(self):
-        pass
 
     def rotate(self):
         if not self.bottom_reached():
@@ -124,21 +131,43 @@ class Model:
             print(' '.join(map(str, i)))
 
     def bottom_reached(self):
-        if np.any((self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (self.MODEL_SHAPE_SIZE_Y - 1) - 1):
+        if np.any(
+                (self.positions[self.current_positions]) > self.MODEL_SHAPE_SIZE_X * (self.MODEL_SHAPE_SIZE_Y - 1) - 1):
             print('bottom is reached!')
             return True
         return False
 
     def left_boundaries_reached(self):
-        if np.any(((self.positions[self.current_positions])) % 10 == 0) or check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() - 1):
+        if np.any(((self.positions[self.current_positions])) % 10 == 0) or check_obst(Model.storage_freezed,
+                                                                                      self.positions[
+                                                                                          self.current_positions].copy() + 9): #-1
             print('left boundary is reached!')
             return True
         return False
 
     def right_boundaries_reached(self):
-        if np.any(((self.positions[self.current_positions])) % 10 == 9)or check_obst(Model.storage_freezed, self.positions[self.current_positions].copy() + 1):
+        if np.any(((self.positions[self.current_positions])) % 10 == 9) or check_obst(Model.storage_freezed,
+                                                                                      self.positions[
+                                                                                          self.current_positions].copy() + 11): # +1
             print('right boundary is reached!')
             return True
+        return False
+
+    def check_gameover(self):
+        _count = 0
+        for i in range(self.MODEL_SHAPE_SIZE_X):
+            if np.count_nonzero(self.saved_positions[self.current_positions][:, i] == 0) >= self.MODEL_SHAPE_SIZE_Y:
+                return print('Game over!')
+        for j in range(10):
+            for i in Model.storage_freezed:
+                if i % 10 == j:
+                    _count += 1
+            if _count == 10:
+                print()
+                print('Game over!')
+                return True
+            else:
+                _count = 0
         return False
 
 
@@ -154,7 +183,8 @@ def check_obst(obst, to_check):
 type_of_model = input('Choose the model    ').split()
 dimensions = input('Choose the size of playground    ').split()
 
-obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]), MODEL_SHAPE_SIZE_Y=int(dimensions[1]))
+obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]),
+                  MODEL_SHAPE_SIZE_Y=int(dimensions[1]))
 
 field = []
 print()
@@ -162,24 +192,25 @@ for i in obj_model.model:
     print(' '.join(map(str, i)))
 print()
 obj_model.print_out()
-while True:
+while not obj_model.check_gameover():
+    obj_model.check_gameover()
     obj_model.freeze_model()
     if obj_model.stucked:
         type_of_model = input('Choose the model    ').split()
-        print(obj_model.last_model)
+        glob_field = obj_model.last_model.copy()
         obj_model = Model(type_model=type_of_model[0], MODEL_SHAPE_SIZE_X=int(dimensions[0]),
-                          MODEL_SHAPE_SIZE_Y=int(dimensions[1]), field=obj_model.last_model)
+                          MODEL_SHAPE_SIZE_Y=int(dimensions[1]), field=glob_field.copy())
         obj_model.print_out()
     else:
-            cmd = input('what to do?  left? right? rotate? down?   ')
-            print()
-            if cmd == 'exit':
-                break
-            elif cmd == 'rotate':
-                obj_model.rotate()
-            elif cmd == 'left':
-                obj_model.move_left()
-            elif cmd == 'right':
-                obj_model.move_right()
-            elif cmd == 'down':
-                obj_model.move_down()
+        cmd = input('what to do?  left? right? rotate? down?   ')
+        print()
+        if cmd == 'exit':
+            break
+        elif cmd == 'rotate':
+            obj_model.rotate()
+        elif cmd == 'left':
+            obj_model.move_left()
+        elif cmd == 'right':
+            obj_model.move_right()
+        elif cmd == 'down':
+            obj_model.move_down()
